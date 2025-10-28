@@ -44,7 +44,7 @@ def gerar_link():
     dados_cliente = request.get_json()
     token = secrets.token_urlsafe(16)
     dados_pendentes[token] = dados_cliente
-    link_assinatura = f"http://127.0.0.1:5000/assinar/{token}"
+    link_assinatura = f"https://assinagym.onrender.com/assinar/{token}"
     return jsonify({"link_assinatura": link_assinatura})
 
 
