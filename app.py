@@ -1,8 +1,6 @@
 from flask import Flask, request, jsonify, render_template, send_from_directory
 import secrets
-# Importa o datetime para pegar o tempo exato
 from datetime import datetime
-# NOVO: Importa a biblioteca de fuso horário
 import pytz
 import base64
 import os
@@ -10,7 +8,6 @@ from fpdf import FPDF
 
 app = Flask(__name__)
 
-# --- CONFIGURAÇÃO ---
 PDF_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'finalizados')
 os.makedirs(PDF_DIR, exist_ok=True)
 TEMP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp')
@@ -35,7 +32,6 @@ def pagina_assinatura(token):
     dados_cliente = dados_pendentes.get(token)
     if not dados_cliente:
         return "<h1>Link de assinatura inválido ou expirado.</h1>", 404
-    
     data_hoje = datetime.today().strftime('%d/%m/%Y')
     return render_template('assinatura.html', token=token, **dados_cliente, data_solicitacao=data_hoje)
 
@@ -47,14 +43,12 @@ def finalizar_assinatura(token):
 
     dados_formulario = request.get_json()
     assinatura_base64 = dados_formulario.get('assinatura')
+    concordou_ciencia = dados_formulario.get('ciencia_concordancia', False)
     
-    # --- DADOS DE AUDITORIA CORRIGIDOS ---
     sao_paulo_tz = pytz.timezone('America/Sao_Paulo')
     timestamp_sp = datetime.now(sao_paulo_tz).strftime('%d/%m/%Y às %H:%M:%S (%Z)')
-    
     ip_lista_completa = request.headers.get('X-Forwarded-For', request.remote_addr)
     ip_cliente = ip_lista_completa.split(',')[0].strip()
-    
     user_agent_cliente = request.headers.get('User-Agent', 'Não informado')
 
     try:
@@ -68,7 +62,6 @@ def finalizar_assinatura(token):
         pdf = FPDF()
         pdf.add_page()
         
-        # --- LÓGICA DE GERAÇÃO DO PDF COMPLETA ---
         pdf.set_font("Arial", 'B', 16)
         pdf.cell(0, 10, "SOLICITAÇÃO DE NÃO RENOVAÇÃO DE CONTRATO", 0, 1, 'C')
         pdf.set_font("Arial", 'B', 14)
@@ -109,15 +102,23 @@ def finalizar_assinatura(token):
 
         pdf.cell(0, 10, "ASSINATURA:", 0, 1)
         pdf.image(caminho_assinatura, w=80)
+        pdf.ln(5)
         
-        pdf.ln(10)
+        pdf.set_font("Arial", 'B', 9)
+        pdf.cell(0, 5, "TERMO DE CIÊNCIA:", 0, 1)
+        pdf.set_font("Arial", size=8)
+        texto_ciencia = "[X] O signatário marcou a caixa de ciência, confirmando que está ciente das condições de cobrança e cancelamento." if concordou_ciencia else "[ ] O signatário NÃO marcou a caixa de ciência."
+        pdf.multi_cell(0, 5, texto_ciencia, border=1, align='L')
+        
+        pdf.ln(5)
         pdf.set_font("Arial", 'B', 8)
         pdf.cell(0, 5, "Trilha de Auditoria do Documento", 0, 1, 'C')
         pdf.set_font("Arial", size=7)
         pdf.multi_cell(0, 4,
             f"Documento assinado eletronicamente por {dados_cliente['nome']} em {timestamp_sp}.\n"
             f"Endereço IP do signatário: {ip_cliente}.\n"
-            f"Navegador / Sistema Operacional: {user_agent_cliente}",
+            f"Navegador / Sistema Operacional: {user_agent_cliente}\n"
+            f"Confirmação do Termo de Ciência: {'Sim' if concordou_ciencia else 'Não'}",
             border=1, align='C'
         )
 

@@ -8,8 +8,22 @@
         body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
         h1, h3 { text-align: center; }
         .documento { background-color: #f9f9f9; padding: 20px; border: 1px solid #eee; margin-bottom: 20px; }
+        
+        .assinatura-container { position: relative; }
+        .assinatura-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ccc;
+            font-size: 2.5em;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
         .assinatura-box { border: 2px dashed #ccc; background-color: #f0f0f0; margin-bottom: 10px; touch-action: none; }
-        #signature-pad { max-width: 100%; height: auto; background-color: #f0f0f0; }
+        #signature-pad { width: 100%; height: 200px; background-color: #f0f0f0; }
+        
         .motivos, .concordancia { margin: 20px 0; }
         .concordancia { border: 1px solid #ffc107; background-color: #fff3cd; padding: 15px; border-radius: 5px; }
         #texto_outros { display: none; width: 98%; margin-top: 10px; padding: 5px; }
@@ -21,34 +35,25 @@
         #btn-limpar:hover { background-color: #5a6268; }
         button:disabled { background-color: #aaa; cursor: not-allowed;}
         .mensagem-sucesso { text-align: center; padding: 20px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; color: #155724; }
-        
-        /* CORREÇÃO: Estilo para os botões na tela de sucesso */
-        .mensagem-sucesso button {
-            background-color: #28a745; /* Fundo verde */
-        }
-        .mensagem-sucesso button:hover {
-            background-color: #218838; /* Fundo verde mais escuro */
-        }
+        .mensagem-sucesso button { background-color: #28a745; }
+        .mensagem-sucesso button:hover { background-color: #218838; }
     </style>
 </head>
 <body>
-
     <div id="conteudo-principal">
         <h1>SOLICITAÇÃO DE NÃO RENOVAÇÃO DE CONTRATO</h1>
         <h3>IRONBERG</h3>
-
         <div class="documento">
             <p>
                 EU, <strong>{{ nome }}</strong>, CPF: <strong>{{ cpf }}</strong>, MATRÍCULA: <strong>{{ matricula }}</strong>
                 SOLICITO A FINALIZAÇÃO DO MEU CONTRATO FIRMADO COM A EMPRESA IRONBERG
-                ALPHAVILLE CNPJ 55.157.979.0001/06, NO DIA {{ data_inicio_contrato }}, EFETUEI O PAGAMENTO
+                ALPHAVILLE CNPJ 55.157.797.0001/06, NO DIA {{ data_inicio_contrato }}, EFETUEI O PAGAMENTO
                 NO VALOR DE R$ {{ valor_multa }} REFERENTE A RESCISÃO ANTECIPADA DO MEU
                 CONTRATO.
             </p>
             <p>DATA: <strong>{{ data_solicitacao }}</strong></p>
             <p>CONSULTOR(A) RESPONSÁVEL: <strong>{{ consultor }}</strong></p>
         </div>
-
         <div class="motivos">
             <h4>1. MOTIVO DO CANCELAMENTO (Obrigatório):</h4>
             <input type="radio" id="motivo1" name="motivo" value="atendimento_professores"><label for="motivo1">NÃO GOSTEI DO ATENDIMENTO DOS PROFESSORES</label><br>
@@ -59,7 +64,6 @@
             <input type="radio" id="motivo_outros" name="motivo" value="outros"><label for="motivo_outros">OUTROS, DESCREVA:</label><br>
             <textarea id="texto_outros" name="texto_outros" rows="3"></textarea>
         </div>
-
         <div class="concordancia">
             <h4>2. TERMO DE CIÊNCIA (Obrigatório):</h4>
             <input type="checkbox" id="check_ciencia" name="check_ciencia">
@@ -69,12 +73,13 @@
                 e o cancelamento do plano só será efetivado após a quitação deste valor.
             </label>
         </div>
-
         <h4>3. ASSINATURA (Obrigatório):</h4>
-        <div class="assinatura-box">
-            <canvas id="signature-pad" width="760" height="200"></canvas>
+        <div class="assinatura-container">
+            <div class="assinatura-placeholder">Assine aqui</div>
+            <div class="assinatura-box">
+                <canvas id="signature-pad"></canvas>
+            </div>
         </div>
-        
         <div class="botoes-container">
             <button id="btn-limpar">LIMPAR ASSINATURA</button>
             <button id="btn-finalizar">ASSINAR E FINALIZAR</button>
@@ -83,7 +88,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script>
-        // Lógica do formulário e da assinatura (sem alterações, já está correta)
         const radios = document.querySelectorAll('input[name="motivo"]');
         const textAreaOutros = document.getElementById('texto_outros');
         radios.forEach(radio => {
@@ -93,24 +97,32 @@
         });
 
         const canvas = document.querySelector("#signature-pad");
+        const placeholder = document.querySelector(".assinatura-placeholder");
         const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(240, 240, 240)' });
+
+        signaturePad.addEventListener("beginStroke", () => {
+            placeholder.style.display = "none";
+        });
+
         function resizeCanvas() {
             const ratio =  Math.max(window.devicePixelRatio || 1, 1);
-            canvas.width = canvas.offsetWidth * ratio;
-            canvas.height = canvas.offsetHeight * ratio;
+            const BoundingBox = canvas.getBoundingClientRect();
+            canvas.width = BoundingBox.width * ratio;
+            canvas.height = BoundingBox.height * ratio;
             canvas.getContext("2d").scale(ratio, ratio);
             signaturePad.clear();
+            placeholder.style.display = "block";
         }
         window.addEventListener("resize", resizeCanvas);
         resizeCanvas();
 
-        // Lógica dos botões (sem alterações, já está correta)
         const botaoFinalizar = document.getElementById('btn-finalizar');
         const botaoLimpar = document.getElementById('btn-limpar');
         const conteudoPrincipal = document.getElementById('conteudo-principal');
 
         botaoLimpar.addEventListener('click', () => {
             signaturePad.clear();
+            placeholder.style.display = "block";
         });
 
         botaoFinalizar.addEventListener('click', () => {
@@ -127,7 +139,8 @@
             const dadosParaEnviar = {
                 motivo: motivoSelecionado.value,
                 texto_outros: textAreaOutros.value,
-                assinatura: signaturePad.toDataURL('image/png')
+                assinatura: signaturePad.toDataURL('image/png'),
+                ciencia_concordancia: cienciaCheckbox.checked
             };
 
             const token = "{{ token }}";
@@ -143,7 +156,6 @@
                     const numeroWhatsApp = "5511955580797";
                     const mensagemWhatsApp = `Olá! Meu documento de cancelamento foi assinado e está disponível no link: ${fullPdfUrl}`;
                     const linkWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagemWhatsApp)}`;
-
                     conteudoPrincipal.innerHTML = `
                         <div class="mensagem-sucesso">
                             <h2>${data.mensagem}</h2>
