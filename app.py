@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify, render_template, send_from_directory
 import secrets
 # Importa o datetime para pegar o tempo exato
 from datetime import datetime
+# NOVO: Importa a biblioteca de fuso horário
+import pytz
 import base64
 import os
 from fpdf import FPDF
@@ -25,7 +27,6 @@ def gerar_link():
     dados_cliente = request.get_json()
     token = secrets.token_urlsafe(16)
     dados_pendentes[token] = dados_cliente
-    # Garante que o link gerado usa a URL pública
     link_assinatura = f"https://assinagym.onrender.com/assinar/{token}"
     return jsonify({"link_assinatura": link_assinatura})
 
@@ -36,7 +37,6 @@ def pagina_assinatura(token):
         return "<h1>Link de assinatura inválido ou expirado.</h1>", 404
     
     data_hoje = datetime.today().strftime('%d/%m/%Y')
-    
     return render_template('assinatura.html', token=token, **dados_cliente, data_solicitacao=data_hoje)
 
 @app.route('/assinar/<token>/finalizar', methods=['POST'])
@@ -48,9 +48,13 @@ def finalizar_assinatura(token):
     dados_formulario = request.get_json()
     assinatura_base64 = dados_formulario.get('assinatura')
     
-    # CAPTURANDO MAIS DADOS PARA AUDITORIA
-    timestamp = datetime.now().strftime('%d/%m/%Y às %H:%M:%S')
-    ip_cliente = request.headers.get('X-Forwarded-For', request.remote_addr)
+    # --- DADOS DE AUDITORIA CORRIGIDOS ---
+    sao_paulo_tz = pytz.timezone('America/Sao_Paulo')
+    timestamp_sp = datetime.now(sao_paulo_tz).strftime('%d/%m/%Y às %H:%M:%S (%Z)')
+    
+    ip_lista_completa = request.headers.get('X-Forwarded-For', request.remote_addr)
+    ip_cliente = ip_lista_completa.split(',')[0].strip()
+    
     user_agent_cliente = request.headers.get('User-Agent', 'Não informado')
 
     try:
@@ -63,8 +67,8 @@ def finalizar_assinatura(token):
     try:
         pdf = FPDF()
         pdf.add_page()
-        pdf.set_font("Arial", size=12)
         
+        # --- LÓGICA DE GERAÇÃO DO PDF COMPLETA ---
         pdf.set_font("Arial", 'B', 16)
         pdf.cell(0, 10, "SOLICITAÇÃO DE NÃO RENOVAÇÃO DE CONTRATO", 0, 1, 'C')
         pdf.set_font("Arial", 'B', 14)
@@ -84,7 +88,6 @@ def finalizar_assinatura(token):
         pdf.cell(0, 10, "MOTIVO:", 0, 1)
         pdf.set_font("Arial", size=11)
         
-        # DICIONÁRIO 'MOTIVOS' COMPLETO
         motivos = {
             "atendimento_professores": "NÃO GOSTEI DO ATENDIMENTO DOS PROFESSORES",
             "atendimento_recepcao": "NÃO GOSTEI DO ATENDIMENTO DA RECEPÇÃO",
@@ -107,13 +110,12 @@ def finalizar_assinatura(token):
         pdf.cell(0, 10, "ASSINATURA:", 0, 1)
         pdf.image(caminho_assinatura, w=80)
         
-        # BLOCO DE AUDITORIA NO PDF
         pdf.ln(10)
         pdf.set_font("Arial", 'B', 8)
         pdf.cell(0, 5, "Trilha de Auditoria do Documento", 0, 1, 'C')
         pdf.set_font("Arial", size=7)
         pdf.multi_cell(0, 4,
-            f"Documento assinado eletronicamente por {dados_cliente['nome']} em {timestamp}.\n"
+            f"Documento assinado eletronicamente por {dados_cliente['nome']} em {timestamp_sp}.\n"
             f"Endereço IP do signatário: {ip_cliente}.\n"
             f"Navegador / Sistema Operacional: {user_agent_cliente}",
             border=1, align='C'
