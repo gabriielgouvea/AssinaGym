@@ -9,7 +9,10 @@
         h1, h3 { text-align: center; }
         .documento { background-color: #f9f9f9; padding: 20px; border: 1px solid #eee; margin-bottom: 20px; }
         .assinatura-box { border: 2px dashed #ccc; background-color: #f0f0f0; margin-bottom: 20px; touch-action: none; }
-        .motivos { margin: 20px 0; }
+        /* AJUSTE: Garante que o canvas se ajuste ao container */
+        #signature-pad { max-width: 100%; height: auto; background-color: #f0f0f0; }
+        .motivos, .concordancia { margin: 20px 0; }
+        .concordancia { border: 1px solid #ffc107; background-color: #fff3cd; padding: 15px; border-radius: 5px; }
         #texto_outros { display: none; width: 98%; margin-top: 10px; padding: 5px; }
         button { width: 100%; padding: 15px; font-size: 18px; color: white; background-color: #28a745; border: none; border-radius: 5px; cursor: pointer; }
         button:hover { background-color: #218838; }
@@ -22,14 +25,21 @@
     <div id="conteudo-principal">
         <h1>SOLICITAÇÃO DE NÃO RENOVAÇÃO DE CONTRATO</h1>
         <h3>IRONBERG</h3>
+
         <div class="documento">
-            <p>EU, <strong>{{ nome }}</strong>, CPF: <strong>{{ cpf }}</strong>, MATRÍCULA: <strong>{{ matricula }}</strong> ... </p>
-            <p>Estou ciente de que ...</p>
+            <p>
+                EU, <strong>{{ nome }}</strong>, CPF: <strong>{{ cpf }}</strong>, MATRÍCULA: <strong>{{ matricula }}</strong>
+                SOLICITO A FINALIZAÇÃO DO MEU CONTRATO FIRMADO COM A EMPRESA IRONBERG
+                ALPHAVILLE CNPJ 55.157.979.0001/06, NO DIA {{ data_inicio_contrato }}, EFETUEI O PAGAMENTO
+                NO VALOR DE R$ {{ valor_multa }} REFERENTE A RESCISÃO ANTECIPADA DO MEU
+                CONTRATO.
+            </p>
             <p>DATA: <strong>{{ data_solicitacao }}</strong></p>
             <p>CONSULTOR(A) RESPONSÁVEL: <strong>{{ consultor }}</strong></p>
         </div>
+
         <div class="motivos">
-            <h4>MOTIVO DO CANCELAMENTO:</h4>
+            <h4>1. MOTIVO DO CANCELAMENTO (Obrigatório):</h4>
             <input type="radio" id="motivo1" name="motivo" value="atendimento_professores"><label for="motivo1">NÃO GOSTEI DO ATENDIMENTO DOS PROFESSORES</label><br>
             <input type="radio" id="motivo2" name="motivo" value="atendimento_recepcao"><label for="motivo2">NÃO GOSTEI DO ATENDIMENTO DA RECEPÇÃO</label><br>
             <input type="radio" id="motivo3" name="motivo" value="problemas_saude"><label for="motivo3">ESTOU COM PROBLEMAS DE SAÚDE</label><br>
@@ -38,16 +48,28 @@
             <input type="radio" id="motivo_outros" name="motivo" value="outros"><label for="motivo_outros">OUTROS, DESCREVA:</label><br>
             <textarea id="texto_outros" name="texto_outros" rows="3"></textarea>
         </div>
-        <h4>ASSINATURA:</h4>
+
+        <div class="concordancia">
+            <h4>2. TERMO DE CIÊNCIA (Obrigatório):</h4>
+            <input type="checkbox" id="check_ciencia" name="check_ciencia">
+            <label for="check_ciencia">
+                Estou ciente de que, caso exista alguma mensalidade com vencimento nos próximos 30 dias,
+                a cobrança será realizada (seja por débito automático no cartão de crédito ou por pagamento antecipado no ato do cancelamento),
+                e o cancelamento do plano só será efetivado após a quitação deste valor.
+            </label>
+        </div>
+
+        <h4>3. ASSINATURA (Obrigatório):</h4>
         <div class="assinatura-box">
             <canvas id="signature-pad" width="760" height="200"></canvas>
         </div>
+
         <button id="btn-finalizar">ASSINAR E FINALIZAR</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script>
-        // --- LÓGICA PARA O FORMULÁRIO DE MOTIVOS ---
+        // --- LÓGICA PARA O FORMULÁRIO DE MOTIVOS (Sem alterações) ---
         const radios = document.querySelectorAll('input[name="motivo"]');
         const textAreaOutros = document.getElementById('texto_outros');
         radios.forEach(radio => {
@@ -56,7 +78,7 @@
             });
         });
 
-        // --- LÓGICA PARA A CAIXA DE ASSINATURA ---
+        // --- LÓGICA PARA A CAIXA DE ASSINATURA (Sem alterações) ---
         const canvas = document.querySelector("#signature-pad");
         const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(240, 240, 240)' });
         function resizeCanvas() {
@@ -69,18 +91,23 @@
         window.addEventListener("resize", resizeCanvas);
         resizeCanvas();
 
-        // --- NOVA LÓGICA PARA O BOTÃO FINALIZAR ---
+        // --- ATUALIZAÇÃO: LÓGICA DO BOTÃO FINALIZAR COM VALIDAÇÃO COMPLETA ---
         const botaoFinalizar = document.getElementById('btn-finalizar');
         const conteudoPrincipal = document.getElementById('conteudo-principal');
 
         botaoFinalizar.addEventListener('click', () => {
-            // 1. Validar se algo foi assinado e um motivo foi selecionado
-            if (signaturePad.isEmpty()) {
-                return alert("Por favor, forneça sua assinatura.");
-            }
+            // 1. Validar TODOS os campos obrigatórios
             const motivoSelecionado = document.querySelector('input[name="motivo"]:checked');
+            const cienciaCheckbox = document.getElementById('check_ciencia');
+
             if (!motivoSelecionado) {
                 return alert("Por favor, selecione o motivo do cancelamento.");
+            }
+            if (!cienciaCheckbox.checked) {
+                return alert("Por favor, marque a caixa de 'Termo de Ciência' para continuar.");
+            }
+            if (signaturePad.isEmpty()) {
+                return alert("Por favor, forneça sua assinatura no campo indicado.");
             }
 
             // Desabilita o botão para evitar cliques duplos
@@ -91,16 +118,14 @@
             const dadosParaEnviar = {
                 motivo: motivoSelecionado.value,
                 texto_outros: textAreaOutros.value,
-                assinatura: signaturePad.toDataURL('image/png') // Converte o desenho para texto Base64
+                assinatura: signaturePad.toDataURL('image/png')
             };
 
             // 3. Enviar para o servidor
-            const token = "{{ token }}"; // Pega o token que o Flask enviou para a página
+            const token = "{{ token }}";
             fetch(`/assinar/${token}/finalizar`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dadosParaEnviar),
             })
             .then(response => response.json())
