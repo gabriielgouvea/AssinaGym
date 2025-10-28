@@ -13,14 +13,22 @@
         .motivos, .concordancia { margin: 20px 0; }
         .concordancia { border: 1px solid #ffc107; background-color: #fff3cd; padding: 15px; border-radius: 5px; }
         #texto_outros { display: none; width: 98%; margin-top: 10px; padding: 5px; }
-        .botoes-container { display: flex; gap: 10px; } /* Container para os botões */
+        .botoes-container { display: flex; gap: 10px; }
         button { width: 100%; padding: 15px; font-size: 18px; color: white; border: none; border-radius: 5px; cursor: pointer; }
         #btn-finalizar { background-color: #28a745; }
         #btn-finalizar:hover { background-color: #218838; }
-        #btn-limpar { background-color: #6c757d; } /* Cor do botão Limpar */
+        #btn-limpar { background-color: #6c757d; }
         #btn-limpar:hover { background-color: #5a6268; }
         button:disabled { background-color: #aaa; cursor: not-allowed;}
         .mensagem-sucesso { text-align: center; padding: 20px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; color: #155724; }
+        
+        /* CORREÇÃO: Estilo para os botões na tela de sucesso */
+        .mensagem-sucesso button {
+            background-color: #28a745; /* Fundo verde */
+        }
+        .mensagem-sucesso button:hover {
+            background-color: #218838; /* Fundo verde mais escuro */
+        }
     </style>
 </head>
 <body>
@@ -44,6 +52,10 @@
         <div class="motivos">
             <h4>1. MOTIVO DO CANCELAMENTO (Obrigatório):</h4>
             <input type="radio" id="motivo1" name="motivo" value="atendimento_professores"><label for="motivo1">NÃO GOSTEI DO ATENDIMENTO DOS PROFESSORES</label><br>
+            <input type="radio" id="motivo2" name="motivo" value="atendimento_recepcao"><label for="motivo2">NÃO GOSTEI DO ATENDIMENTO DA RECEPÇÃO</label><br>
+            <input type="radio" id="motivo3" name="motivo" value="problemas_saude"><label for="motivo3">ESTOU COM PROBLEMAS DE SAÚDE</label><br>
+            <input type="radio" id="motivo4" name="motivo" value="dificuldade_financeira"><label for="motivo4">ESTOU COM DIFICULDADE FINANCEIRA</label><br>
+            <input type="radio" id="motivo5" name="motivo" value="mudei_endereco"><label for="motivo5">MUDEI DE ENDEREÇO</label><br>
             <input type="radio" id="motivo_outros" name="motivo" value="outros"><label for="motivo_outros">OUTROS, DESCREVA:</label><br>
             <textarea id="texto_outros" name="texto_outros" rows="3"></textarea>
         </div>
@@ -71,7 +83,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script>
-        // --- LÓGICA DO FORMULÁRIO (sem alterações) ---
+        // Lógica do formulário e da assinatura (sem alterações, já está correta)
         const radios = document.querySelectorAll('input[name="motivo"]');
         const textAreaOutros = document.getElementById('texto_outros');
         radios.forEach(radio => {
@@ -80,10 +92,8 @@
             });
         });
 
-        // --- LÓGICA PARA A CAIXA DE ASSINATURA (CORRIGIDA) ---
         const canvas = document.querySelector("#signature-pad");
         const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(240, 240, 240)' });
-
         function resizeCanvas() {
             const ratio =  Math.max(window.devicePixelRatio || 1, 1);
             canvas.width = canvas.offsetWidth * ratio;
@@ -94,12 +104,11 @@
         window.addEventListener("resize", resizeCanvas);
         resizeCanvas();
 
-        // --- LÓGICA DOS BOTÕES (CORRIGIDA E MELHORADA) ---
+        // Lógica dos botões (sem alterações, já está correta)
         const botaoFinalizar = document.getElementById('btn-finalizar');
         const botaoLimpar = document.getElementById('btn-limpar');
         const conteudoPrincipal = document.getElementById('conteudo-principal');
 
-        // NOVO: Adiciona a funcionalidade ao botão de limpar
         botaoLimpar.addEventListener('click', () => {
             signaturePad.clear();
         });
